@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Script d'appel</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh;padding:1.5rem 1rem}
+  .container{max-width:720px;margin:0 auto}
+  h1{font-size:20px;font-weight:600;margin-bottom:4px}
+  .subtitle{font-size:13px;color:#888;margin-bottom:1.5rem}
+
+  /* NAV SITUATIONS */
+  .nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem}
+  .nav button{font-size:13px;padding:6px 16px;border-radius:20px;border:1px solid #ddd;background:#fff;color:#555;cursor:pointer;transition:all 0.15s;font-weight:500}
+  .nav button:hover{border-color:#999;color:#1a1a1a}
+  .nav button.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+
+  .situation{display:none}
+  .situation.active{display:block}
+
+  /* BLOCS */
+  .block{background:#fff;border:1px solid #e8e8e8;border-radius:12px;margin-bottom:10px;overflow:hidden}
+  .block-header{padding:12px 16px;display:flex;align-items:center;gap:10px}
+  .block-tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:3px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+  .tag-ouverture{background:#E6F1FB;color:#0C447C}
+  .tag-qualification{background:#EEEDFE;color:#3C3489}
+  .tag-proposition{background:#EAF3DE;color:#27500A}
+  .tag-objection{background:#FFF3CD;color:#856404}
+  .tag-conclusion{background:#f0faf4;color:#145a2a}
+  .tag-urgence{background:#FCEBEB;color:#A32D2D}
+  .tag-delicat{background:#FAEEDA;color:#633806}
+  .tag-validation{background:#f5f5f3;color:#555}
+
+  .block-title{font-size:13px;font-weight:500;color:#1a1a1a;flex:1}
+  .chevron{width:16px;height:16px;color:#aaa;transition:transform 0.2s;flex-shrink:0;cursor:pointer}
+  .chevron.open{transform:rotate(90deg)}
+
+  .block-body{display:none;border-top:1px solid #f0f0ec;padding:14px 16px}
+  .block-body.open{display:block}
+
+  /* Phrases */
+  .phrase-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:#aaa;margin-bottom:6px;margin-top:12px}
+  .phrase-label:first-child{margin-top:0}
+  .phrase{background:#fafaf8;border-left:3px solid #1a1a1a;border-radius:0 8px 8px 0;padding:10px 14px;font-size:14px;line-height:1.6;color:#1a1a1a;margin-bottom:6px;cursor:pointer;transition:background 0.15s;position:relative}
+  .phrase:hover{background:#f0ede8}
+  .phrase.copied{background:#f0faf4;border-left-color:#2d9e5c}
+  .copy-hint{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:#aaa;pointer-events:none}
+
+  .note{background:#f5f5f3;border-radius:8px;padding:8px 12px;font-size:12px;color:#666;line-height:1.5;margin-top:8px;font-style:italic}
+  .warning{background:#FFF7ED;border-left:3px solid #D97706;border-radius:0 8px 8px 0;padding:8px 12px;font-size:12px;color:#633806;line-height:1.5;margin-top:8px}
+  .success-note{background:#f0faf4;border-left:3px solid #2d9e5c;border-radius:0 8px 8px 0;padding:8px 12px;font-size:12px;color:#145a2a;line-height:1.5;margin-top:8px}
+
+  .copy-toast{position:fixed;bottom:20px;right:20px;background:#1a1a1a;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999}
+  .copy-toast.show{opacity:1}
+
+  .situation-intro{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:14px 16px;margin-bottom:16px}
+  .situation-intro p{font-size:13px;color:#666;line-height:1.6}
+  .footer{margin-top:2rem;font-size:12px;color:#bbb;text-align:center}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Script d'appel</h1>
+  <p class="subtitle">Phrases préparées — cliquer pour copier</p>
+
+  <div class="nav">
+    <button class="active" onclick="switchSit('entrant')">Appel entrant</button>
+    <button onclick="switchSit('urgence')">Urgence</button>
+    <button onclick="switchSit('devis')">Demande de devis</button>
+    <button onclick="switchSit('rappel')">Rappel client</button>
+    <button onclick="switchSit('artisan')">Appel artisan</button>
+    <button onclick="switchSit('objections')">Objections courantes</button>
+  </div>
+
+  <!-- ══ APPEL ENTRANT ══════════════════════════════════════════════════════ -->
+  <div id="sit-entrant" class="situation active">
+    <div class="situation-intro">
+      <p>Situation standard — client qui appelle pour une intervention plomberie ou chauffage. L'objectif : qualifier en moins de 3 minutes, proposer un créneau, rassurer.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-ouverture">Ouverture</span>
+        <span class="block-title">Décrocher et se présenter</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Formule principale</div>
+        <div class="phrase" onclick="copyPhrase(this)">Bonjour, secrétariat [NOM DE L'ARTISAN], je vous écoute.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Ne jamais dire "c'est [NOM DU SERVICE]" ni "je suis le coordinateur". Le client doit penser parler au secrétariat de l'artisan.</div>
+        <div class="phrase-label">Si le client demande "C'est bien le plombier ?"</div>
+        <div class="phrase" onclick="copyPhrase(this)">Oui, c'est bien le secrétariat de [NOM DE L'ARTISAN]. Comment puis-je vous aider ?<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-qualification">Qualification</span>
+        <span class="block-title">Identifier le problème</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Ouvrir la qualification</div>
+        <div class="phrase" onclick="copyPhrase(this)">D'accord, pouvez-vous me décrire le problème en quelques mots ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Préciser la localisation</div>
+        <div class="phrase" onclick="copyPhrase(this)">Et c'est à quelle adresse ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Vérifier l'urgence</div>
+        <div class="phrase" onclick="copyPhrase(this)">Est-ce que c'est urgent pour vous, ou vous pouvez attendre quelques jours ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Identifier si nouveau client</div>
+        <div class="phrase" onclick="copyPhrase(this)">Vous avez déjà fait appel à nous par le passé ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Si oui → client existant, pas de commission. Si non → nouveau client, commission applicable.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-proposition">Proposition</span>
+        <span class="block-title">Annoncer un créneau et une fourchette de prix</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Annoncer le créneau</div>
+        <div class="phrase" onclick="copyPhrase(this)">Très bien. Je peux vous proposer une intervention [aujourd'hui / demain / jeudi] en [matinée / après-midi], vers [heure]. Ça vous convient ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Annoncer une fourchette de prix (si intervention simple)</div>
+        <div class="phrase" onclick="copyPhrase(this)">Pour ce type d'intervention, comptez entre [X] et [Y] euros, hors fournitures éventuelles. Le technicien confirmera le tarif exact sur place.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Si devis complexe — ne pas annoncer de prix</div>
+        <div class="phrase" onclick="copyPhrase(this)">Pour ce type de travaux, je préfère vous donner un devis précis plutôt qu'une estimation approximative. Le technicien passera évaluer la situation et vous remettra un devis sur place.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="warning">Ne jamais annoncer un prix fixe. Toujours "entre X et Y" ou "à partir de X". Toujours ajouter "hors fournitures".</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-conclusion">Conclusion</span>
+        <span class="block-title">Confirmer et clore l'appel</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Confirmer les informations</div>
+        <div class="phrase" onclick="copyPhrase(this)">Parfait. Je note votre nom et votre numéro de téléphone pour que le technicien puisse vous recontacter si besoin. C'est bien Monsieur / Madame [NOM] au [NUMÉRO] ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Clore l'appel</div>
+        <div class="phrase" onclick="copyPhrase(this)">Très bien, c'est noté. Vous recevrez une confirmation par message dans quelques minutes. À bientôt.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="success-note">Après l'appel : saisir immédiatement dans Sheets, envoyer le message WhatsApp à l'artisan, vérifier la confirmation dans les 2h.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ URGENCE ════════════════════════════════════════════════════════════ -->
+  <div id="sit-urgence" class="situation">
+    <div class="situation-intro">
+      <p>Client en situation d'urgence — fuite active, panne chauffage en hiver, risque sécurité. L'objectif : rassurer immédiatement, qualifier vite, déclencher l'artisan sans délai.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-urgence">Urgence</span>
+        <span class="block-title">Désamorcer et qualifier vite</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Prendre en charge immédiatement</div>
+        <div class="phrase" onclick="copyPhrase(this)">D'accord, je comprends, on va régler ça rapidement. Pouvez-vous me dire exactement ce qui se passe en ce moment ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Si fuite active — couper l'eau</div>
+        <div class="phrase" onclick="copyPhrase(this)">En attendant le technicien, est-ce que vous pouvez couper le robinet d'arrêt ? Il se trouve généralement sous l'évier ou dans le couloir près du compteur.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Si odeur de gaz</div>
+        <div class="phrase" onclick="copyPhrase(this)">Très important : n'allumez aucune lumière, ouvrez les fenêtres immédiatement et sortez du logement. Appelez le 0800 004 195, c'est le numéro d'urgence gaz, gratuit et disponible 24h/24. Je vous rappelle dès que j'ai un technicien disponible.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="warning">Odeur de gaz : ne jamais envoyer l'artisan en premier. GRDF passe avant.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-urgence">Urgence</span>
+        <span class="block-title">Annoncer l'intervention urgente</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Confirmer la prise en charge</div>
+        <div class="phrase" onclick="copyPhrase(this)">Je mobilise un technicien en urgence. Je vous rappelle dans les 10 minutes pour vous confirmer son heure d'arrivée.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Annoncer la majoration urgence</div>
+        <div class="phrase" onclick="copyPhrase(this)">Pour une intervention en urgence, une majoration peut s'appliquer sur le tarif habituel — je vous confirme le montant exact lors de mon rappel.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Ne jamais annoncer un montant de majoration sans avoir vérifié avec l'artisan. Certains n'appliquent pas de majoration.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-urgence">Urgence</span>
+        <span class="block-title">Personnes vulnérables sans chauffage</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Identifier la vulnérabilité</div>
+        <div class="phrase" onclick="copyPhrase(this)">Y a-t-il des personnes âgées, des enfants en bas âge ou des personnes fragiles dans le logement ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Réponse si oui</div>
+        <div class="phrase" onclick="copyPhrase(this)">Dans ce cas, je classe cette intervention en priorité absolue. Je vous rappelle dans 5 minutes avec un technicien disponible.<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DEMANDE DE DEVIS ═══════════════════════════════════════════════════ -->
+  <div id="sit-devis" class="situation">
+    <div class="situation-intro">
+      <p>Client qui demande un devis — remplacement chaudière, installation neuve, travaux importants. L'objectif : collecter les infos, ne pas annoncer de prix, organiser une visite.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-qualification">Qualification</span>
+        <span class="block-title">Qualifier la demande de devis</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Ouvrir</div>
+        <div class="phrase" onclick="copyPhrase(this)">Bien sûr, pour établir un devis précis, j'ai besoin de quelques informations. Quel type d'appareil souhaitez-vous remplacer ou installer ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Pour un remplacement chaudière</div>
+        <div class="phrase" onclick="copyPhrase(this)">Vous êtes propriétaire occupant ? Et votre chaudière actuelle fonctionne encore ou vous avez déjà des pannes ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Mentionner les aides si propriétaire</div>
+        <div class="phrase" onclick="copyPhrase(this)">En tant que propriétaire occupant, vous pouvez potentiellement bénéficier d'aides comme MaPrimeRénov' pour ce type de travaux. Le technicien pourra vous informer sur ce point lors de la visite.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="warning">Ne jamais annoncer un montant d'aide. Les conditions changent régulièrement. Laisser l'artisan gérer ce point.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-proposition">Proposition</span>
+        <span class="block-title">Organiser la visite technique</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Expliquer pourquoi une visite est nécessaire</div>
+        <div class="phrase" onclick="copyPhrase(this)">Pour ce type de travaux, je préfère vous proposer une visite technique plutôt qu'une estimation par téléphone — ça nous permet de vous donner un devis précis et réaliste, sans mauvaise surprise.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Proposer le créneau</div>
+        <div class="phrase" onclick="copyPhrase(this)">Je peux organiser une visite [cette semaine / la semaine prochaine]. Vous êtes disponible plutôt en matinée ou en après-midi ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Conclure</div>
+        <div class="phrase" onclick="copyPhrase(this)">Parfait. Le technicien passera [jour] vers [heure]. La visite est gratuite et sans engagement. Je vous envoie une confirmation par message.<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RAPPEL CLIENT ══════════════════════════════════════════════════════ -->
+  <div id="sit-rappel" class="situation">
+    <div class="situation-intro">
+      <p>Tu rappelles un client suite à un appel manqué ou pour confirmer / modifier un créneau. L'objectif : être proactif, réactif, professionnel.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-ouverture">Ouverture</span>
+        <span class="block-title">Rappel suite à appel manqué</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Formule principale</div>
+        <div class="phrase" onclick="copyPhrase(this)">Bonjour, c'est le secrétariat de [NOM DE L'ARTISAN]. Je vous rappelle suite à votre appel de tout à l'heure — avez-vous toujours besoin d'une intervention ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Si le client a trouvé quelqu'un d'autre</div>
+        <div class="phrase" onclick="copyPhrase(this)">Je comprends tout à fait. N'hésitez pas à nous rappeler si vous avez un autre besoin. Bonne journée.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Ne pas insister. Rester cordial. Tracer dans Sheets : statut Annulé.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-delicat">Délicat</span>
+        <span class="block-title">Modifier ou annuler un créneau</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Annoncer un retard artisan</div>
+        <div class="phrase" onclick="copyPhrase(this)">Bonjour, c'est le secrétariat de [NOM DE L'ARTISAN]. Je vous contacte car le technicien prévu pour votre intervention est légèrement retardé — il arrivera vers [heure]. Est-ce que ça vous convient ou préférez-vous qu'on reprogramme ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Annoncer une annulation (cas de force majeure)</div>
+        <div class="phrase" onclick="copyPhrase(this)">Bonjour, je vous appelle pour vous informer que le technicien prévu aujourd'hui ne pourra malheureusement pas intervenir — un imprévu sérieux s'est produit. Je suis vraiment désolé pour ce désagrément. Puis-je vous proposer un nouveau créneau dès [jour prochain] ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="warning">Ne jamais annoncer "l'artisan est malade" ou donner des détails. Rester sur "un imprévu sérieux". Proposer immédiatement une alternative.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-delicat">Délicat</span>
+        <span class="block-title">Suivre une mission terminée</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Appel de suivi après intervention</div>
+        <div class="phrase" onclick="copyPhrase(this)">Bonjour, c'est le secrétariat de [NOM DE L'ARTISAN]. Je vous appelle pour m'assurer que l'intervention s'est bien passée et que tout est en ordre de votre côté ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Si client mécontent</div>
+        <div class="phrase" onclick="copyPhrase(this)">Je comprends votre mécontentement et je prends votre retour très au sérieux. Je transmets ça immédiatement au technicien et je reviens vers vous dans l'heure avec une solution.<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ APPEL ARTISAN ═══════════════════════════════════════════════════════ -->
+  <div id="sit-artisan" class="situation">
+    <div class="situation-intro">
+      <p>Tu appelles l'artisan pour lui transmettre une mission, confirmer un créneau ou gérer un problème. L'objectif : être clair, bref, et actionnable.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-proposition">Mission</span>
+        <span class="block-title">Transmettre une nouvelle mission</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Par téléphone (si WhatsApp non lu)</div>
+        <div class="phrase" onclick="copyPhrase(this)">Bonjour [PRÉNOM], j'ai une mission pour toi — [TYPE D'INTERVENTION] chez [NOM DU CLIENT] au [ADRESSE], [JOUR] vers [HEURE]. Je t'envoie le détail sur WhatsApp, tu peux me confirmer dès que tu l'as lu ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Si l'artisan demande plus d'infos</div>
+        <div class="phrase" onclick="copyPhrase(this)">Tout est dans le message WhatsApp — le contexte, le tarif estimé et les coordonnées du client. Tu confirmes et je bloque le créneau dans ton agenda.<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-delicat">Recadrage</span>
+        <span class="block-title">Artisan qui ne répond pas</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Première relance (2h sans réponse)</div>
+        <div class="phrase" onclick="copyPhrase(this)">Bonjour [PRÉNOM], je t'ai envoyé une mission il y a 2h sur WhatsApp. Le client attend une confirmation — tu peux me dire si tu prends ou non ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Recadrage après absence non signalée</div>
+        <div class="phrase" onclick="copyPhrase(this)">On a un problème — le client t'attendait ce matin et tu n'es pas venu sans prévenir. J'ai dû gérer ça en urgence. C'est une situation que je ne peux pas absorber régulièrement. Qu'est-ce qui s'est passé ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="warning">Garder un ton ferme mais non agressif. L'objectif est de comprendre, pas d'accuser. Documenter l'incident dans le scoring.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-validation">Validation</span>
+        <span class="block-title">Demander le prix réel après intervention</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase-label">Demande de retour post-intervention</div>
+        <div class="phrase" onclick="copyPhrase(this)">Bonjour [PRÉNOM], la mission [ID] chez [CLIENT] — c'est bon de ton côté ? Quel montant tu as facturé au final ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="phrase-label">Si dépassement important du prix estimé</div>
+        <div class="phrase" onclick="copyPhrase(this)">Je note. C'est sensiblement plus élevé que ce que j'avais annoncé au client — est-ce qu'il avait validé ce montant avant que tu commences les travaux supplémentaires ?<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ OBJECTIONS ════════════════════════════════════════════════════════ -->
+  <div id="sit-objections" class="situation">
+    <div class="situation-intro">
+      <p>Réponses préparées aux objections les plus fréquentes. L'objectif : répondre sans improviser, rester calme et factuel.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-objection">Objection</span>
+        <span class="block-title">"C'est trop cher"</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Je comprends. Le tarif que je vous ai indiqué est une fourchette basée sur ce type d'intervention à Paris. Le technicien pourra vous confirmer le montant exact une fois sur place, avant de commencer — vous aurez toujours le choix de valider ou non.<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-objection">Objection</span>
+        <span class="block-title">"Je rappellerai plus tard"</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Bien sûr, pas de problème. Si vous souhaitez qu'on réserve un créneau dès maintenant, ça vous évite d'attendre — les disponibilités se remplissent vite en ce moment. Sinon, n'hésitez pas à rappeler.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Ne jamais forcer. La phrase crée une légère urgence sans pression. Si le client insiste pour rappeler, on laisse faire.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-objection">Objection</span>
+        <span class="block-title">"Vous êtes qui exactement ?"</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Je suis le service de coordination de [NOM DE L'ARTISAN] — je gère ses appels et son planning pour qu'il puisse se concentrer sur ses interventions. Est-ce qu'il y a quelque chose que vous souhaitez lui faire passer directement ?<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="warning">Ne jamais mentir. "Service de coordination" est honnête et cadre correctement le rôle sans créer de méfiance.</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-objection">Objection</span>
+        <span class="block-title">"Je veux parler à l'artisan directement"</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Il est en intervention en ce moment et ne peut pas décrocher. Je peux prendre votre message et il vous rappellera ce soir, ou je peux directement organiser votre intervention si vous me donnez quelques informations — qu'est-ce que vous préférez ?<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-objection">Objection</span>
+        <span class="block-title">"Le prix final était différent de ce qu'on m'avait dit"</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">Je comprends votre surprise. L'estimation que je vous avais donnée était basée sur les informations disponibles par téléphone. Si le technicien a constaté une complexité supplémentaire sur place, ça peut expliquer l'écart. Pouvez-vous me dire quel montant vous a été facturé ? Je vérifie ça avec lui et je reviens vers vous.<span class="copy-hint">cliquer pour copier</span></div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-header" onclick="toggle(this)">
+        <span class="block-tag tag-objection">Objection</span>
+        <span class="block-title">"J'ai trouvé moins cher ailleurs"</span>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="block-body">
+        <div class="phrase" onclick="copyPhrase(this)">C'est tout à fait possible. Ce que je peux vous garantir, c'est un technicien qualifié, assuré en responsabilité civile, avec un tarif transparent avant le début de l'intervention. Mais si vous avez une meilleure offre, je comprends tout à fait.<span class="copy-hint">cliquer pour copier</span></div>
+        <div class="note">Ne jamais dénigrer la concurrence. Mettre en avant les garanties plutôt que le prix.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Script d'appel — usage hors ligne</div>
+</div>
+
+<div class="copy-toast" id="toast">Phrase copiée</div>
+
+<script>
+function switchSit(id){
+  document.querySelectorAll('.situation').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sit-'+id).classList.add('active');
+  const btns=document.querySelectorAll('.nav button');
+  const map={'entrant':0,'urgence':1,'devis':2,'rappel':3,'artisan':4,'objections':5};
+  btns[map[id]].classList.add('active');
+}
+
+function toggle(header){
+  const body=header.nextElementSibling;
+  const chev=header.querySelector('.chevron');
+  const open=body.classList.toggle('open');
+  chev.classList.toggle('open',open);
+}
+
+function copyPhrase(el){
+  const text=el.textContent.replace('cliquer pour copier','').trim();
+  navigator.clipboard.writeText(text).then(()=>{
+    el.classList.add('copied');
+    setTimeout(()=>el.classList.remove('copied'),1500);
+    const t=document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),1800);
+  });
+}
+</script>
+</body>
+</html>
